@@ -2,6 +2,8 @@
 // SSO Integration Service for authentication with polkadot-sso
 
 import { createLogger } from '../utils/logger.js';
+import { validateString, validatePolkadotAddress } from '../utils/validation.js';
+import { createAuthError, ErrorCode, ErrorSeverity, handleError } from '../utils/errors.js';
 
 const logger = createLogger('sso-service');
 
@@ -41,29 +43,83 @@ export class SSOService {
    */
   async createChallenge(address: string, walletType: string = 'polkadot-js'): Promise<SSOChallenge> {
     try {
-      logger.info('Creating SSO challenge', { address, walletType });
+      // SECURITY: Validate input parameters
+      const addressValidation = validatePolkadotAddress(address);
+      if (!addressValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.INVALID_ADDRESS,
+          `Invalid Polkadot address: ${addressValidation.error}`,
+          { address, walletType },
+          ErrorSeverity.HIGH
+        );
+      }
+
+      const walletTypeValidation = validateString(walletType, {
+        required: true,
+        maxLength: 50,
+        pattern: /^[a-zA-Z0-9\-_]+$/
+      });
+      if (!walletTypeValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.VALIDATION_ERROR,
+          `Invalid wallet type: ${walletTypeValidation.error}`,
+          { address, walletType },
+          ErrorSeverity.MEDIUM
+        );
+      }
+
+      logger.info('Creating SSO challenge', { 
+        address: addressValidation.sanitized, 
+        walletType: walletTypeValidation.sanitized 
+      });
 
       const url = new URL(`${this.baseUrl}/challenge`);
       url.searchParams.set('client_id', this.config.clientId);
-      url.searchParams.set('address', address);
+      url.searchParams.set('address', addressValidation.sanitized!);
 
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'User-Agent': 'Polkadot-Password-Manager/1.0.0',
+          'X-Client-Version': '1.0.0'
         },
+        // Add timeout to prevent hanging requests
+        signal: AbortSignal.timeout(10000) // 10 seconds
       });
 
       if (!response.ok) {
-        throw new Error(`SSO challenge creation failed: ${response.statusText}`);
+        const errorMessage = `SSO challenge creation failed: ${response.status} ${response.statusText}`;
+        logger.error('SSO challenge creation failed', { 
+          status: response.status, 
+          statusText: response.statusText,
+          address: addressValidation.sanitized
+        });
+        
+        throw createAuthError(
+          ErrorCode.SSO_CHALLENGE_FAILED,
+          errorMessage,
+          { status: response.status, address: addressValidation.sanitized },
+          ErrorSeverity.HIGH
+        );
       }
 
       // The SSO server returns HTML with embedded challenge data
       const html = await response.text();
       
-      // Debug: Log a snippet of the HTML response
-      logger.info('SSO HTML response snippet', { 
-        htmlSnippet: html.substring(0, 500),
+      // SECURITY: Limit HTML size to prevent memory issues
+      if (html.length > 1000000) { // 1MB limit
+        throw createAuthError(
+          ErrorCode.SSO_ERROR,
+          'SSO response too large',
+          { htmlLength: html.length },
+          ErrorSeverity.HIGH
+        );
+      }
+      
+      // Debug: Log a snippet of the HTML response (sanitized)
+      logger.info('SSO HTML response received', { 
+        htmlLength: html.length,
         hasChallengeData: html.includes('window.CHALLENGE_DATA')
       });
       
@@ -75,21 +131,62 @@ export class SSOService {
           htmlLength: html.length,
           hasWindowChallengeData: html.includes('window.CHALLENGE_DATA')
         });
-        throw new Error('Failed to extract challenge data from SSO response');
+        
+        throw createAuthError(
+          ErrorCode.SSO_ERROR,
+          'Failed to extract challenge data from SSO response',
+          { htmlLength: html.length },
+          ErrorSeverity.HIGH
+        );
+      }
+
+      // SECURITY: Validate extracted challenge data
+      const challengeIdValidation = validateString(challengeData.challengeId || '', {
+        required: true,
+        minLength: 10,
+        maxLength: 100,
+        pattern: /^[a-zA-Z0-9\-_]+$/
+      });
+      
+      if (!challengeIdValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.SSO_ERROR,
+          `Invalid challenge ID format: ${challengeIdValidation.error}`,
+          { challengeId: challengeData.challengeId || 'undefined' },
+          ErrorSeverity.HIGH
+        );
+      }
+
+      const messageValidation = validateString(challengeData.message || '', {
+        required: true,
+        minLength: 10,
+        maxLength: 1000
+      });
+      
+      if (!messageValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.SSO_ERROR,
+          `Invalid challenge message format: ${messageValidation.error}`,
+          { messageLength: challengeData.message?.length || 0 },
+          ErrorSeverity.HIGH
+        );
       }
 
       const challenge: SSOChallenge = {
-        challengeId: challengeData.challengeId,
-        message: challengeData.message,
+        challengeId: challengeIdValidation.sanitized!,
+        message: messageValidation.sanitized!,
         expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
       };
 
-      logger.info('SSO challenge created successfully', { challengeId: challenge.challengeId });
+      logger.info('SSO challenge created successfully', { 
+        challengeId: challenge.challengeId,
+        messageLength: challenge.message.length
+      });
 
       return challenge;
     } catch (error) {
-      logger.error('Failed to create SSO challenge', { error });
-      throw new Error(`Failed to create SSO challenge: ${error}`);
+      handleError(error as Error, { address, walletType, operation: 'createChallenge' });
+      throw error;
     }
   }
 
@@ -108,7 +205,7 @@ export class SSOService {
       }
 
       // Parse the JavaScript object
-      const challengeDataStr = challengeDataMatch[1];
+      const challengeDataStr = challengeDataMatch[1]!;
       const challengeData = JSON.parse(challengeDataStr);
 
       if (!challengeData.challengeId || !challengeData.message) {
