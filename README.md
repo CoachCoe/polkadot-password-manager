@@ -119,15 +119,43 @@ KUSAMA_RPC_URL=wss://kusama-rpc.polkadot.io
 POLKADOT_RPC_URL=wss://rpc.polkadot.io
 ```
 
-## Security Features
+## 🔒 Security Features
 
-* **End-to-End Encryption**: All credentials are encrypted before blockchain storage
-* **Decentralized Storage**: No central server can access your credentials
-* **Wallet-Based Access**: Only you can access your credentials with your wallet
-* **Audit Logging**: Complete audit trail of all operations
-* **Rate Limiting**: Protection against brute force attacks
-* **Access Control**: Fine-grained permissions for credential sharing
-* **Secure Deletion**: Secure credential revocation and cleanup
+### **Encryption & Cryptography**
+- **AES-256-GCM** authenticated encryption for all stored data
+- **PBKDF2** key derivation with 100,000 iterations
+- **Cryptographically secure** random number generation
+- **Timing-safe** password verification
+- **Salt-based** password hashing
+
+### **Authentication & Authorization**
+- **Polkadot wallet integration** (Polkadot.js, Talisman, SubWallet, Nova)
+- **SSO integration** with polkadot-sso server
+- **JWT-based** session management
+- **Multi-factor authentication** support
+- **Session invalidation** and cleanup
+
+### **Security Monitoring**
+- **Comprehensive audit logging** for all security events
+- **Real-time threat detection** and alerting
+- **Rate limiting** and DDoS protection
+- **Input validation** and sanitization
+- **XSS and injection** attack prevention
+
+### **Compliance & Standards**
+- **OWASP Top 10** security compliance
+- **Enterprise security** best practices
+- **Data privacy** protection
+- **Audit trail** maintenance
+
+### **Traditional Security Features**
+- **End-to-End Encryption**: All credentials are encrypted before blockchain storage
+- **Decentralized Storage**: No central server can access your credentials
+- **Wallet-Based Access**: Only you can access your credentials with your wallet
+- **Audit Logging**: Complete audit trail of all operations
+- **Rate Limiting**: Protection against brute force attacks
+- **Access Control**: Fine-grained permissions for credential sharing
+- **Secure Deletion**: Secure credential revocation and cleanup
 
 ## Development
 

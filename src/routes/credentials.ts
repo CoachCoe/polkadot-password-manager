@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { CredentialService } from '../services/credentialService.js';
+import { CredentialService } from '../services/credentialService';
 
 export const createCredentialRouter = (credentialService: CredentialService) => {
   const router = Router();

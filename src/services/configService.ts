@@ -1,7 +1,7 @@
 // Polkadot Password Manager
 // Configuration service for managing environment variables and settings
 
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('config-service');
 

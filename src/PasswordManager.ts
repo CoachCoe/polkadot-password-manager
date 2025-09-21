@@ -1,10 +1,10 @@
 // Polkadot Password Manager
 // Main PasswordManager class for managing credentials
 
-import { CredentialService } from './services/credentialService.js';
-import { createCredentialRouter } from './routes/credentials.js';
-import type { PasswordManagerOptions } from './types.js';
-import { DEFAULT_KUSAMA_CONFIG } from './services/blockchainService.js';
+import { CredentialService } from './services/credentialService';
+import { createCredentialRouter } from './routes/credentials';
+import type { PasswordManagerOptions } from './types';
+import { DEFAULT_KUSAMA_CONFIG } from './services/blockchainService';
 
 export class PasswordManager {
   private credentialService: CredentialService;

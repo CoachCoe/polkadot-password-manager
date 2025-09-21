@@ -3,7 +3,7 @@
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { KeyringPair } from '@polkadot/keyring/types';
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('blockchain-service');
 
