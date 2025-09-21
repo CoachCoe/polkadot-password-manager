@@ -1,9 +1,12 @@
 // Polkadot Password Manager
 // Type definitions for the password management system
 
+import type { BlockchainConfig } from './services/blockchainService.js';
+
 export interface PasswordManagerOptions {
   encryptionKey: string;
   database: DatabaseConfig;
+  blockchainConfig?: BlockchainConfig;
   auditService?: AuditService;
   cacheService?: CacheService;
 }

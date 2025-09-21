@@ -1,31 +1,50 @@
 // Polkadot Password Manager
 // Main PasswordManager class for managing credentials
 
-import { CredentialService } from './credentials/services/credentialService';
-import { createCredentialRouter } from './credentials/routes/credentials';
-import { PasswordManagerOptions, DatabaseConfig, AuditService, CacheService } from './types';
+import { CredentialService } from './services/credentialService.js';
+import { createCredentialRouter } from './routes/credentials.js';
+import type { PasswordManagerOptions } from './types.js';
+import { DEFAULT_KUSAMA_CONFIG } from './services/blockchainService.js';
 
 export class PasswordManager {
   private credentialService: CredentialService;
-  private options: PasswordManagerOptions;
+  private isInitialized = false;
 
   constructor(options: PasswordManagerOptions) {
-    this.options = options;
-    this.credentialService = new CredentialService();
+    this.credentialService = new CredentialService(
+      options.encryptionKey,
+      options.blockchainConfig || DEFAULT_KUSAMA_CONFIG
+    );
+  }
+
+  /**
+   * Initialize the password manager and connect to Kusama chain
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      await this.credentialService.initialize();
+      this.isInitialized = true;
+    } catch (error) {
+      throw new Error(`Failed to initialize PasswordManager: ${error}`);
+    }
   }
 
   /**
    * Create a new credential
    */
-  async createCredential(request: any) {
-    return this.credentialService.createCredential(request);
+  async createCredential(request: any, userAddress: string, signer: any) {
+    return this.credentialService.createCredential(request, userAddress, signer);
   }
 
   /**
    * Get user credentials
    */
-  async getUserCredentials(userId: string) {
-    return this.credentialService.getUserCredentials(userId);
+  async getUserCredentials(userAddress: string) {
+    return this.credentialService.getUserCredentials(userAddress);
   }
 
   /**
@@ -45,8 +64,8 @@ export class PasswordManager {
   /**
    * Revoke a credential
    */
-  async revokeCredential(credentialId: string) {
-    return this.credentialService.revokeCredential(credentialId);
+  async revokeCredential(credentialId: string, userAddress: string, signer: any) {
+    return this.credentialService.revokeCredential(credentialId, userAddress, signer);
   }
 
   /**

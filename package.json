@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
-  "browser": "dist/index.js",
+  "browser": false,
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -14,21 +14,26 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "browser": false,
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs",
+    "build": "npm run build:esm",
     "build:esm": "tsc --module ESNext --outDir dist",
-    "build:cjs": "tsc --module CommonJS --outDir dist-cjs && (cp dist-cjs/index.js dist/index.cjs.js || true) && (cp dist-cjs/*.d.ts dist/ || true)",
+    "build:cjs": "tsc --module CommonJS --outDir dist-cjs --verbatimModuleSyntax false && (cp dist-cjs/index.js dist/index.cjs.js || true) && (cp dist-cjs/*.d.ts dist/ || true)",
     "dev": "tsc --watch",
     "clean": "rm -rf dist dist-cjs",
     "start": "node dist/index.js",
+    "start:dev": "npm run build && npm start",
+    "setup": "node scripts/setup.cjs",
+    "deploy:kusama": "node scripts/deploy-to-kusama.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:integration": "node test-integration.js",
+    "sso:dev": "echo 'Start the SSO server from the polkadot-sso repository'",
+    "browser:demo": "echo 'Open examples/browser-integration.html in your browser'",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "lint": "eslint src/**/*.ts",
@@ -37,13 +42,22 @@
     "pre-commit": "npm run lint && npm run format:check && npm run type-check"
   },
   "dependencies": {
-    "crypto-js": "^4.2.0",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "redis": "^4.6.10",
+    "@polkadot/api": "^10.11.2",
+    "@polkadot/api-contract": "^10.11.2",
+    "@polkadot/extension-dapp": "^0.61.7",
+    "@polkadot/keyring": "^12.6.2",
+    "@polkadot/util": "^12.6.2",
+    "@polkadot/util-crypto": "^12.6.2",
+    "@polkadot/wasm-crypto": "^6.4.1",
+    "@substrate/connect": "^0.8.0",
     "connect-redis": "^7.1.0",
-    "sqlite3": "^5.1.6",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "redis": "^4.6.10",
     "sqlite": "^5.0.1",
+    "sqlite3": "^5.1.6",
     "winston": "^3.11.0",
     "zod": "^3.22.4"
   },

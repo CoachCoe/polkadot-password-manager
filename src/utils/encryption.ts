@@ -4,32 +4,30 @@
 import * as crypto from 'crypto';
 
 export function encryptData(data: string, key: string): string {
-  const algorithm = 'aes-256-gcm';
+  const algorithm = 'aes-256-cbc';
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipher(algorithm, key);
+  const keyBuffer = crypto.createHash('sha256').update(key).digest();
+  const cipher = crypto.createCipheriv(algorithm, keyBuffer, iv);
   
   let encrypted = cipher.update(data, 'utf8', 'hex');
   encrypted += cipher.final('hex');
   
-  const authTag = cipher.getAuthTag();
-  
-  return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+  return iv.toString('hex') + ':' + encrypted;
 }
 
 export function decryptData(encryptedData: string, key: string): string {
-  const algorithm = 'aes-256-gcm';
+  const algorithm = 'aes-256-cbc';
   const parts = encryptedData.split(':');
   
-  if (parts.length !== 3) {
+  if (parts.length !== 2) {
     throw new Error('Invalid encrypted data format');
   }
   
-  const iv = Buffer.from(parts[0], 'hex');
-  const authTag = Buffer.from(parts[1], 'hex');
-  const encrypted = parts[2];
+  const iv = Buffer.from(parts[0]!, 'hex');
+  const encrypted = parts[1]!;
+  const keyBuffer = crypto.createHash('sha256').update(key).digest();
   
-  const decipher = crypto.createDecipher(algorithm, key);
-  decipher.setAuthTag(authTag);
+  const decipher = crypto.createDecipheriv(algorithm, keyBuffer, iv);
   
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');

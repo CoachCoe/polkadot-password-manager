@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polkadot Password Manager - Browser Integration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            margin: 0;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #5a6fd8;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .wallet-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .credential-form {
+            display: grid;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .credentials-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .credential-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code img {
+            max-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Polkadot Password Manager</h1>
+            <p>Secure credential storage on the Kusama blockchain</p>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="section">
+            <h3>Connection Status</h3>
+            <div id="connectionStatus" class="status info">
+                Initializing connection to Kusama network...
+            </div>
+            <button id="connectWallet" class="button">Connect Wallet</button>
+            <button id="connectSSO" class="button">Connect via SSO</button>
+        </div>
+
+        <!-- Wallet Information -->
+        <div id="walletInfo" class="section" style="display: none;">
+            <h3>Wallet Information</h3>
+            <div id="walletDetails" class="wallet-info"></div>
+        </div>
+
+        <!-- Authentication Challenge -->
+        <div id="authChallenge" class="section" style="display: none;">
+            <h3>Authentication Challenge</h3>
+            <div id="challengeMessage"></div>
+            <div id="qrCode" class="qr-code"></div>
+            <button id="signMessage" class="button">Sign Message</button>
+            <button id="checkStatus" class="button">Check Status</button>
+        </div>
+
+        <!-- Credential Management -->
+        <div id="credentialManagement" class="section" style="display: none;">
+            <h3>Credential Management</h3>
+            
+            <!-- Create Credential Form -->
+            <div class="credential-form">
+                <div class="form-group">
+                    <label for="credentialType">Credential Type:</label>
+                    <select id="credentialType">
+                        <option value="password">Password</option>
+                        <option value="api-key">API Key</option>
+                        <option value="ssh-key">SSH Key</option>
+                        <option value="certificate">Certificate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="website">Website/Service:</label>
+                    <input type="text" id="website" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password/Secret:</label>
+                    <input type="password" id="password" placeholder="Your secret">
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes (optional):</label>
+                    <textarea id="notes" rows="3" placeholder="Additional notes..."></textarea>
+                </div>
+                <button id="createCredential" class="button">Create Credential</button>
+            </div>
+
+            <!-- Credentials List -->
+            <div style="margin-top: 30px;">
+                <h4>Your Credentials</h4>
+                <button id="loadCredentials" class="button">Load Credentials</button>
+                <div id="credentialsList" class="credentials-list"></div>
+            </div>
+        </div>
+
+        <!-- Blockchain Status -->
+        <div class="section">
+            <h3>Blockchain Status</h3>
+            <div id="blockchainStatus" class="status info">
+                Checking blockchain connection...
+            </div>
+            <button id="refreshStatus" class="button">Refresh Status</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Configuration
+        const CONFIG = {
+            apiUrl: 'http://localhost:3000',
+            ssoUrl: 'http://localhost:3001',
+            kusamaRpcUrl: 'wss://kusama-rpc.polkadot.io'
+        };
+
+        // State
+        let currentSession = null;
+        let currentChallenge = null;
+        let walletAccounts = [];
+
+        // DOM Elements
+        const elements = {
+            connectionStatus: document.getElementById('connectionStatus'),
+            connectWallet: document.getElementById('connectWallet'),
+            connectSSO: document.getElementById('connectSSO'),
+            walletInfo: document.getElementById('walletInfo'),
+            walletDetails: document.getElementById('walletDetails'),
+            authChallenge: document.getElementById('authChallenge'),
+            challengeMessage: document.getElementById('challengeMessage'),
+            qrCode: document.getElementById('qrCode'),
+            signMessage: document.getElementById('signMessage'),
+            checkStatus: document.getElementById('checkStatus'),
+            credentialManagement: document.getElementById('credentialManagement'),
+            createCredential: document.getElementById('createCredential'),
+            loadCredentials: document.getElementById('loadCredentials'),
+            credentialsList: document.getElementById('credentialsList'),
+            blockchainStatus: document.getElementById('blockchainStatus'),
+            refreshStatus: document.getElementById('refreshStatus')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeApp();
+            setupEventListeners();
+        });
+
+        async function initializeApp() {
+            try {
+                // Check blockchain status
+                await checkBlockchainStatus();
+                
+                // Check if Polkadot.js extension is available
+                if (window.injectedWeb3) {
+                    const availableExtensions = Object.keys(window.injectedWeb3);
+                    if (availableExtensions.length > 0) {
+                        elements.connectionStatus.innerHTML = `Polkadot.js extension detected (${availableExtensions.length} available). Ready to connect.`;
+                        elements.connectionStatus.className = 'status success';
+                    } else {
+                        elements.connectionStatus.innerHTML = 'Polkadot.js extension found but no accounts available. Please create an account.';
+                        elements.connectionStatus.className = 'status error';
+                    }
+                } else {
+                    elements.connectionStatus.innerHTML = `
+                        <strong>Polkadot.js extension not found.</strong><br>
+                        Please install it from:<br>
+                        • <a href="https://chrome.google.com/webstore/detail/polkadot%7Bjs%7D-extension/mopnmbcafieddcagagdcbnhejhlodfma" target="_blank">Chrome Web Store</a><br>
+                        • <a href="https://addons.mozilla.org/en-US/firefox/addon/polkadot-js-extension/" target="_blank">Firefox Add-ons</a>
+                    `;
+                    elements.connectionStatus.className = 'status error';
+                }
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                elements.connectionStatus.innerHTML = `Initialization failed: ${error.message}`;
+                elements.connectionStatus.className = 'status error';
+            }
+        }
+
+        function setupEventListeners() {
+            elements.connectWallet.addEventListener('click', connectWallet);
+            elements.connectSSO.addEventListener('click', connectSSO);
+            elements.signMessage.addEventListener('click', signMessage);
+            elements.checkStatus.addEventListener('click', checkChallengeStatus);
+            elements.createCredential.addEventListener('click', createCredential);
+            elements.loadCredentials.addEventListener('click', loadCredentials);
+            elements.refreshStatus.addEventListener('click', checkBlockchainStatus);
+        }
+
+        async function connectWallet() {
+            try {
+                elements.connectionStatus.innerHTML = 'Connecting to wallet...';
+                elements.connectionStatus.className = 'status info';
+
+                // Check if Polkadot.js extension is available
+                if (!window.injectedWeb3) {
+                    throw new Error('Polkadot.js extension not found. Please install it from the Chrome Web Store or Firefox Add-ons.');
+                }
+
+                // Check for available extensions
+                const availableExtensions = Object.keys(window.injectedWeb3);
+                if (availableExtensions.length === 0) {
+                    throw new Error('No Polkadot extensions found. Please install Polkadot.js extension.');
+                }
+
+                console.log('Available extensions:', availableExtensions);
+
+                // Try to enable the first available extension
+                const extensionName = availableExtensions[0];
+                console.log('Attempting to enable extension:', extensionName);
+
+                let extension;
+                try {
+                    extension = await window.injectedWeb3[extensionName].enable('Polkadot Password Manager');
+                } catch (enableError) {
+                    console.error('Extension enable failed:', enableError);
+                    throw new Error(`Failed to enable ${extensionName}: ${enableError.message}`);
+                }
+
+                if (!extension) {
+                    throw new Error(`Extension ${extensionName} did not return an API`);
+                }
+
+                // Get accounts
+                let accounts;
+                try {
+                    accounts = await extension.accounts.get();
+                } catch (accountsError) {
+                    console.error('Failed to get accounts:', accountsError);
+                    throw new Error(`Failed to get accounts: ${accountsError.message}`);
+                }
+
+                if (accounts.length === 0) {
+                    throw new Error('No accounts found in wallet. Please create an account in your Polkadot.js extension.');
+                }
+
+                walletAccounts = accounts;
+                const selectedAccount = accounts[0];
+
+                // Display wallet info
+                elements.walletDetails.innerHTML = `
+                    <strong>Address:</strong> ${selectedAccount.address}<br>
+                    <strong>Name:</strong> ${selectedAccount.meta.name || 'Unknown'}<br>
+                    <strong>Source:</strong> ${selectedAccount.meta.source}<br>
+                    <strong>Extension:</strong> ${extensionName}
+                `;
+                elements.walletInfo.style.display = 'block';
+
+                // Create authentication challenge
+                await createAuthChallenge(selectedAccount.address, selectedAccount.meta.source);
+
+                elements.connectionStatus.innerHTML = 'Wallet connected successfully!';
+                elements.connectionStatus.className = 'status success';
+
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                elements.connectionStatus.innerHTML = `Wallet connection failed: ${error.message}`;
+                elements.connectionStatus.className = 'status error';
+            }
+        }
+
+        async function connectSSO() {
+            try {
+                elements.connectionStatus.innerHTML = 'Connecting via SSO...';
+                elements.connectionStatus.className = 'status info';
+
+                // For demo purposes, we'll simulate SSO connection
+                // In a real implementation, this would redirect to the SSO server
+                const mockSession = {
+                    sessionId: 'mock-session-' + Date.now(),
+                    userId: 'user-123',
+                    address: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+                    walletType: 'sso',
+                    expiresAt: Date.now() + 3600000 // 1 hour
+                };
+
+                currentSession = mockSession;
+                elements.credentialManagement.style.display = 'block';
+
+                elements.connectionStatus.innerHTML = 'SSO connection successful!';
+                elements.connectionStatus.className = 'status success';
+
+            } catch (error) {
+                console.error('SSO connection failed:', error);
+                elements.connectionStatus.innerHTML = `SSO connection failed: ${error.message}`;
+                elements.connectionStatus.className = 'status error';
+            }
+        }
+
+        async function createAuthChallenge(address, walletType) {
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/api/auth/challenge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        address,
+                        walletType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Challenge creation failed: ${response.statusText}`);
+                }
+
+                currentChallenge = await response.json();
+                
+                elements.challengeMessage.innerHTML = `
+                    <strong>Challenge Message:</strong><br>
+                    <code>${currentChallenge.message}</code>
+                `;
+                elements.authChallenge.style.display = 'block';
+
+                if (currentChallenge.qrCode) {
+                    elements.qrCode.innerHTML = `<img src="${currentChallenge.qrCode}" alt="QR Code">`;
+                }
+
+            } catch (error) {
+                console.error('Challenge creation failed:', error);
+                throw error;
+            }
+        }
+
+        async function signMessage() {
+            try {
+                if (!currentChallenge || !walletAccounts.length) {
+                    throw new Error('No challenge or wallet available');
+                }
+
+                const account = walletAccounts[0];
+                
+                // Find the extension that was used to connect
+                const availableExtensions = Object.keys(window.injectedWeb3);
+                const extensionName = availableExtensions[0]; // Use the first available extension
+                
+                const extension = await window.injectedWeb3[extensionName].enable('Polkadot Password Manager');
+                
+                if (!extension.signer) {
+                    throw new Error('Extension does not provide a signer');
+                }
+
+                if (!extension.signer.signRaw) {
+                    throw new Error('Signer does not support raw message signing');
+                }
+
+                const { signature } = await extension.signer.signRaw({
+                    address: account.address,
+                    data: currentChallenge.message,
+                    type: 'bytes'
+                });
+
+                console.log('Signature received:', signature);
+
+                // Verify signature
+                await verifySignature(currentChallenge.challengeId, signature);
+
+            } catch (error) {
+                console.error('Message signing failed:', error);
+                alert(`Message signing failed: ${error.message}`);
+            }
+        }
+
+        async function verifySignature(challengeId, signature) {
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/api/auth/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        challengeId,
+                        signature
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Signature verification failed: ${response.statusText}`);
+                }
+
+                currentSession = await response.json();
+                elements.credentialManagement.style.display = 'block';
+                elements.authChallenge.style.display = 'none';
+
+                alert('Authentication successful! You can now manage your credentials.');
+
+            } catch (error) {
+                console.error('Signature verification failed:', error);
+                throw error;
+            }
+        }
+
+        async function checkChallengeStatus() {
+            try {
+                if (!currentChallenge) {
+                    throw new Error('No active challenge');
+                }
+
+                const response = await fetch(`${CONFIG.apiUrl}/api/auth/status/${currentChallenge.challengeId}`);
+                const result = await response.json();
+
+                if (result.session) {
+                    currentSession = result.session;
+                    elements.credentialManagement.style.display = 'block';
+                    elements.authChallenge.style.display = 'none';
+                    alert('Authentication successful!');
+                } else {
+                    alert(`Challenge status: ${result.status}`);
+                }
+
+            } catch (error) {
+                console.error('Status check failed:', error);
+                alert(`Status check failed: ${error.message}`);
+            }
+        }
+
+        async function createCredential() {
+            try {
+                if (!currentSession) {
+                    throw new Error('Not authenticated');
+                }
+
+                const credentialData = {
+                    credential_type_id: document.getElementById('credentialType').value,
+                    credential_data: {
+                        website: document.getElementById('website').value,
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value,
+                        notes: document.getElementById('notes').value
+                    },
+                    expires_at: Date.now() + (365 * 24 * 60 * 60 * 1000) // 1 year
+                };
+
+                const response = await fetch(`${CONFIG.apiUrl}/api/credentials`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession.sessionId}`
+                    },
+                    body: JSON.stringify({
+                        ...credentialData,
+                        userAddress: currentSession.address,
+                        signer: currentSession.walletAccount
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Credential creation failed: ${response.statusText}`);
+                }
+
+                const credential = await response.json();
+                alert(`Credential created successfully! ID: ${credential.id}`);
+                
+                // Clear form
+                document.getElementById('website').value = '';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('notes').value = '';
+
+            } catch (error) {
+                console.error('Credential creation failed:', error);
+                alert(`Credential creation failed: ${error.message}`);
+            }
+        }
+
+        async function loadCredentials() {
+            try {
+                if (!currentSession) {
+                    throw new Error('Not authenticated');
+                }
+
+                const response = await fetch(`${CONFIG.apiUrl}/api/credentials/user/${currentSession.address}`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentSession.sessionId}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load credentials: ${response.statusText}`);
+                }
+
+                const credentials = await response.json();
+                displayCredentials(credentials);
+
+            } catch (error) {
+                console.error('Failed to load credentials:', error);
+                alert(`Failed to load credentials: ${error.message}`);
+            }
+        }
+
+        function displayCredentials(credentials) {
+            if (credentials.length === 0) {
+                elements.credentialsList.innerHTML = '<p>No credentials found.</p>';
+                return;
+            }
+
+            const html = credentials.map(cred => `
+                <div class="credential-item">
+                    <strong>${cred.credential_type_id}</strong><br>
+                    <strong>Website:</strong> ${JSON.parse(cred.credential_data).website || 'N/A'}<br>
+                    <strong>Username:</strong> ${JSON.parse(cred.credential_data).username || 'N/A'}<br>
+                    <strong>Created:</strong> ${new Date(cred.created_at).toLocaleDateString()}<br>
+                    <strong>Status:</strong> ${cred.status}
+                </div>
+            `).join('');
+
+            elements.credentialsList.innerHTML = html;
+        }
+
+        async function checkBlockchainStatus() {
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/api/credentials/status/blockchain`);
+                const status = await response.json();
+
+                elements.blockchainStatus.innerHTML = `
+                    <strong>Chain:</strong> ${status.chain}<br>
+                    <strong>Version:</strong> ${status.version}<br>
+                    <strong>Block Number:</strong> ${status.blockNumber}<br>
+                    <strong>Connected:</strong> ${status.connected ? 'Yes' : 'No'}
+                `;
+                elements.blockchainStatus.className = status.connected ? 'status success' : 'status error';
+
+            } catch (error) {
+                console.error('Blockchain status check failed:', error);
+                elements.blockchainStatus.innerHTML = `Blockchain status check failed: ${error.message}`;
+                elements.blockchainStatus.className = 'status error';
+            }
+        }
+    </script>
+</body>
+</html>

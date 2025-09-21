@@ -2,7 +2,7 @@
 // Helper functions for credential operations
 
 import * as crypto from 'crypto';
-import { Credential, CredentialType } from '../types/credential';
+import type { Credential, CredentialType } from '../types/credential.js';
 
 /**
  * Generate a unique credential ID
@@ -29,7 +29,7 @@ export function validateCredentialData(
 
   try {
     const requiredFields = JSON.parse(credentialType.required_fields);
-    const optionalFields = JSON.parse(credentialType.optional_fields);
+    // const optionalFields = JSON.parse(credentialType.optional_fields);
     const validationRules = JSON.parse(credentialType.validation_rules);
 
     // Check required fields
@@ -107,14 +107,26 @@ export function formatCredentialForDisplay(credential: Credential): {
   expiresAt?: string;
   isActive: boolean;
 } {
-  return {
+  const result: {
+    id: string;
+    type: string;
+    status: string;
+    issuedAt: string;
+    expiresAt?: string;
+    isActive: boolean;
+  } = {
     id: credential.id,
     type: credential.credential_type_id,
     status: credential.status,
     issuedAt: new Date(credential.issued_at).toISOString(),
-    expiresAt: credential.expires_at ? new Date(credential.expires_at).toISOString() : undefined,
     isActive: isCredentialActive(credential),
   };
+  
+  if (credential.expires_at) {
+    result.expiresAt = new Date(credential.expires_at).toISOString();
+  }
+  
+  return result;
 }
 
 /**
@@ -127,11 +139,22 @@ export function generateCredentialSummary(credential: Credential): {
   issuedAt: string;
   expiresAt?: string;
 } {
-  return {
+  const result: {
+    id: string;
+    type: string;
+    status: string;
+    issuedAt: string;
+    expiresAt?: string;
+  } = {
     id: credential.id,
     type: credential.credential_type_id,
     status: credential.status,
     issuedAt: new Date(credential.issued_at).toISOString(),
-    expiresAt: credential.expires_at ? new Date(credential.expires_at).toISOString() : undefined,
   };
+  
+  if (credential.expires_at) {
+    result.expiresAt = new Date(credential.expires_at).toISOString();
+  }
+  
+  return result;
 }
