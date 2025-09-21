@@ -1,7 +1,7 @@
 // Polkadot Password Manager
 // Comprehensive error handling system
 
-import { createLogger } from './logger.js';
+import { createLogger } from './logger';
 
 const logger = createLogger('error-handler');
 

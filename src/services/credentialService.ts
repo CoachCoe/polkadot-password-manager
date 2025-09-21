@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
-import { createLogger } from '../utils/logger.js';
-import { BlockchainService, DEFAULT_KUSAMA_CONFIG } from './blockchainService.js';
-import { WalletService } from './walletService.js';
-// import type { WalletAccount } from './walletService.js';
-import { encryptData, decryptData } from '../utils/encryption.js';
-import type { Credential, CreateCredentialRequest, ShareCredentialRequest, VerifyCredentialRequest } from '../types/credential.js';
+import { createLogger } from '../utils/logger';
+import { BlockchainService, DEFAULT_KUSAMA_CONFIG } from './blockchainService';
+import { WalletService } from './walletService';
+// import type { WalletAccount } from './walletService';
+import { encryptData, decryptData } from '../utils/encryption';
+import type { Credential, CreateCredentialRequest, ShareCredentialRequest, VerifyCredentialRequest } from '../types/credential';
 
 const logger = createLogger('credential-service');
 

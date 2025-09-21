@@ -1,9 +1,9 @@
 // Polkadot Password Manager
 // SSO Integration Service for authentication with polkadot-sso
 
-import { createLogger } from '../utils/logger.js';
-import { validateString, validatePolkadotAddress } from '../utils/validation.js';
-import { createAuthError, ErrorCode, ErrorSeverity, handleError } from '../utils/errors.js';
+import { createLogger } from '../utils/logger';
+import { validateString, validatePolkadotAddress } from '../utils/validation';
+import { createAuthError, ErrorCode, ErrorSeverity, handleError } from '../utils/errors';
 
 const logger = createLogger('sso-service');
 
@@ -204,9 +204,11 @@ export class SSOService {
         return null;
       }
 
-      // Parse the JavaScript object
+      // Parse the JavaScript object (convert to valid JSON first)
       const challengeDataStr = challengeDataMatch[1]!;
-      const challengeData = JSON.parse(challengeDataStr);
+      // Convert JavaScript object syntax to JSON by adding quotes around property names
+      const jsonStr = challengeDataStr.replace(/(\w+):/g, '"$1":');
+      const challengeData = JSON.parse(jsonStr);
 
       if (!challengeData.challengeId || !challengeData.message) {
         logger.error('Invalid challenge data structure', { challengeData });

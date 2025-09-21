@@ -1,10 +1,10 @@
 // Polkadot Password Manager
 // Integrated authentication service combining SSO and wallet functionality
 
-import { createLogger } from '../utils/logger.js';
-import { SSOService, type SSOSession } from './ssoService.js';
-import { WalletService, type WalletAccount } from './walletService.js';
-import { ConfigService } from './configService.js';
+import { createLogger } from '../utils/logger';
+import { SSOService, type SSOSession } from './ssoService';
+import { WalletService, type WalletAccount } from './walletService';
+import { ConfigService } from './configService';
 
 const logger = createLogger('auth-service');
 

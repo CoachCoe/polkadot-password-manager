@@ -1,9 +1,9 @@
 // Polkadot Password Manager
 // Comprehensive audit logging system for security monitoring
 
-import { createLogger } from './logger.js';
-import { SecurityEventType, SecurityRiskLevel } from '../config/security.js';
-import { createSecureHash } from './encryption.js';
+import { createLogger } from './logger';
+import { SecurityEventType, SecurityRiskLevel } from '../config/security';
+import { createSecureHash } from './encryption';
 
 const logger = createLogger('audit');
 

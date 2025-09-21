@@ -2,14 +2,14 @@
 // Security middleware for comprehensive protection
 
 import type { Request, Response, NextFunction } from 'express';
-import { createLogger } from '../utils/logger.js';
-import { validateSessionToken, sanitizeHtml } from '../utils/validation.js';
-import { createSecureHash } from '../utils/encryption.js';
+import { createLogger } from '../utils/logger';
+import { validateSessionToken, sanitizeHtml } from '../utils/validation';
+import { createSecureHash } from '../utils/encryption';
 
 const logger = createLogger('security-middleware');
 
 // Rate limiting store (in production, use Redis)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+export const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 // Security headers
 const SECURITY_HEADERS = {

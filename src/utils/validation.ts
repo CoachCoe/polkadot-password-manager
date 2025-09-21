@@ -1,7 +1,7 @@
 // Polkadot Password Manager
 // Comprehensive validation utilities for security and data integrity
 
-// import { createLogger } from './logger.js';
+// import { createLogger } from './logger';
 
 // const logger = createLogger('validation');
 
